@@ -1,0 +1,21 @@
+{
+  "name": "s3objectreader",
+  "version": "0.1.0",
+  "description": "A lambda function that reads object files from S3 bucket.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "compile": "rm -rf awsDeploy/* && cp index.js awsDeploy",
+    "zip": "zip -r awsDeploy/test_s3ObjectReader.zip .",
+    "s3Upload": "aws s3 cp awsDeploy/test_s3ObjectReader.zip s3://my-learners-bucket/test_s3ObjectReader.zip",
+    "publish-lambda": "aws lambda update-function-code --function-name test_s3ObjectReader --s3-bucket my-learners-bucket --s3-key test_s3ObjectReader.zip",
+    "deploy-lambda": "npm run zip && npm run s3Upload && npm run publish-lambda"
+  },
+  "author": "Anjaney Singh",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.100.0",
+    "aws-sdk": "^2.1145.0",
+    "dotenv": "^16.0.1"
+  }
+}
