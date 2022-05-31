@@ -1,23 +1,57 @@
-const { readObject, getObjectPresignedUrl } = require("./lib/awsS3");
+require("dotenv").config();
+const {
+  readObject,
+  listObjects,
+  deleteObject,
+  getObjectPresignedUrl,
+  deleteAllObjects,
+} = require("./lib/awsS3");
 
 exports.handler = async (s3RequestBody, context) => {
-  // NOTE: Request Body contains file name and bucket.
-
-  const { bucketName, fileName } = s3RequestBody;
+  const { operationType, bucketName, fileName } = s3RequestBody;
 
   if (!bucketName || !fileName) return;
 
-  // NOTE: Read S3 Object file
-  const s3Fileresponse = await readObject(bucketName, fileName);
+  let s3BucketPrefix = s3RequestBody.directoryPrefix ?? "";
+  let result = "";
+
+  switch (operationType) {
+    case "get-object":
+      result = await getS3Object(bucketName, fileName);
+      break;
+    case "delete-object":
+      result = await deleteObject(bucketName, fileName);
+      break;
+    case "list-all-objects":
+      result = await getAllObjects(bucketName, s3BucketPrefix);
+      break;
+    case "delete-all-objects":
+      result = await removeS3BucketObjects(bucketName, s3BucketPrefix);
+      break;
+    default:
+      break;
+  }
+  return result;
+};
+
+async function getS3Object(bucket, key) {
+  const s3Fileresponse = await readObject(bucket, key);
   const responseBody = s3Fileresponse.Body.toString("utf-8");
 
   if (exceededLimit(responseBody))
-    return await getObjectPresignedUrl(bucketName, fileName);
+    return await getObjectPresignedUrl(bucket, key);
 
   return JSON.parse(responseBody);
-};
+}
 
-const exceededLimit = (data) => {
-  if (data.length > 6291456) return true;
-  else return false;
-};
+async function getAllObjects(bucket, prefix) {
+  const response = JSON.stringify(await listObjects(bucket, prefix));
+  return JSON.parse(response.Body);
+}
+
+async function removeS3BucketObjects(bucket, prefix) {
+  return (await deleteAllObjects(bucket, prefix)).Deleted;
+}
+
+const exceededLimit = (data) =>
+  data.length > process.env.LAMBDA_RESPONSE_PAYLOAD_LIMIT ? true : false;
