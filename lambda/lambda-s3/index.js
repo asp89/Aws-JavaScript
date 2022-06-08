@@ -45,8 +45,12 @@ async function getS3Object(bucket, key) {
 }
 
 async function getAllObjects(bucket, prefix) {
-  const response = JSON.stringify(await listObjects(bucket, prefix));
-  return JSON.parse(response.Body);
+  try {
+    const response = await listObjects(bucket, prefix);
+    return JSON.parse(JSON.stringify(response.Contents));
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 async function removeS3BucketObjects(bucket, prefix) {
